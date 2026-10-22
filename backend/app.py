@@ -150,7 +150,11 @@ def _origin_allowed(ws: WebSocket) -> bool:
         return False
     origin_host = (parsed.hostname or "").lower()
     server_host = _hostname(ws.headers.get("host"))
-    if origin_host and origin_host == server_host:
+    # Behind a reverse proxy (Vercel, ngrok) the public hostname arrives in
+    # x-forwarded-host while Host may carry the internal name — accept both.
+    forwarded_host = _hostname(ws.headers.get("x-forwarded-host"))
+    public_hosts = {h for h in (server_host, forwarded_host) if h}
+    if origin_host and origin_host in public_hosts:
         return True
     return origin_host in _LOOPBACK_HOSTS and server_host in _LOOPBACK_HOSTS
 
@@ -175,4 +179,11 @@ async def ws_live(
 
 
 # Static frontend — mounted last so /api and /ws take precedence.
-app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+# The directory is checked explicitly rather than relying on StaticFiles'
+# check_dir: on serverless platforms the frontend is force-included into the
+# bundle via vercel.json, and a missing directory must not take the whole
+# API down at import time.
+if FRONTEND_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+else:
+    log.warning("frontend directory not found at %s — serving API only", FRONTEND_DIR)

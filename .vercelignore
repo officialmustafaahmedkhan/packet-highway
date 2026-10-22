@@ -1,0 +1,8 @@
+# Keep the function bundle small. Vercel uploads the working directory, so
+# these must be excluded explicitly — .gitignore is not consulted.
+.venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+mesh/
