@@ -1,3 +1,10 @@
-# Vercel reads dependencies from the project root. The canonical list lives in
-# backend/requirements.txt — this file just points at it so the two can't drift.
--r backend/requirements.txt
+# Vercel reads dependencies from the project root. The canonical list also
+# lives in backend/requirements.txt; the lines are duplicated here on purpose
+# because Vercel's framework detection scans this file for `fastapi` and does
+# not follow pip's `-r` include directives.
+#
+# Keep in sync with backend/requirements.txt.
+fastapi>=0.115
+uvicorn[standard]>=0.30
+scapy>=2.6.0
+python-multipart>=0.0.9
